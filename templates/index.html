@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Academic Portal - {{ course_id }}</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+    font-family: 'Prompt', sans-serif;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(rgba(10, 20, 40, 0.8), rgba(10, 20, 40, 0.8)),
+    url("{{ url_for('static', filename='bu.jpg') }}");
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    min-height: 100vh;
+    padding: 40px 20px;
+}
+
+.container {
+    max-width: 1100px;
+    margin: auto;
+}
+
+h1 {
+    text-align: center;
+    color: #fff;
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+.back-link {
+    display: inline-block;
+    color: #00d2ff;
+    text-decoration: none;
+    margin-bottom: 20px;
+    font-weight: 400;
+}
+
+.back-link:hover { text-decoration: underline; }
+
+/* Card */
+.glass-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-radius: 20px;
+    padding: 30px;
+    margin-bottom: 25px;
+    color: white;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+h3 {
+    border-left: 5px solid #00d2ff;
+    padding-left: 12px;
+    margin-bottom: 20px;
+}
+
+/* Search Section */
+.search-container {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.search-input {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    background: rgba(255, 255, 255, 0.95);
+    font-family: 'Prompt', sans-serif;
+}
+
+/* Result Card */
+.result-display {
+    margin-top: 25px;
+    padding: 20px;
+    background: rgba(0, 210, 255, 0.1);
+    border-radius: 15px;
+    border: 1px solid #00d2ff;
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Form & Buttons */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+}
+
+input:not(.search-input):not([type=file]) {
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    background: rgba(255, 255, 255, 0.95);
+}
+
+button {
+    padding: 12px 25px;
+    border-radius: 10px;
+    border: none;
+    background: linear-gradient(135deg,#1a237e,#3949ab);
+    color: white;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.3s;
+}
+
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,210,255,0.3);
+}
+
+/* Badges */
+.badge {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.85em;
+    display: inline-block;
+}
+.badge-good { background: #2e7d32; color: #fff; }
+.badge-average { background: #ef6c00; color: #fff; }
+.badge-weak { background: #c62828; color: #fff; }
+
+/* Table & Progress */
+table { width: 100%; border-collapse: collapse; }
+th { background: rgba(0,0,0,0.4); color: #00d2ff; padding: 15px; }
+td { padding: 15px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.05); }
+
+.progress-container { width: 100px; margin: 0 auto 5px; }
+.progress { background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; height: 8px; }
+.progress-bar { height: 100%; background: linear-gradient(90deg, #00d2ff, #3a7bd5); }
+
+.graph-img { max-width: 100%; border-radius: 15px; margin-top: 20px; border: 1px solid rgba(255,255,255,0.1); }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <a href="/" class="back-link">← กลับหน้าเลือกวิชา</a>
+    <h1>🎓 วิชา {{ course_id }} Prediction System</h1>
+
+    <div class="glass-card" style="border: 2px solid #00d2ff;">
+        <h3>🔍 ตรวจสอบผลวิเคราะห์รายบุคคล (วิชา {{ course_id }})</h3>
+        <p style="font-size: 0.9em; color: #ccc;">กรอกรหัสนักศึกษาเพื่อดูการทำนายสถานะการเรียนจาก AI</p>
+        <form action="/search/{{ course_id }}" method="get" class="search-container">
+            <input type="text" name="id" class="search-input" placeholder="กรอกรหัสนักศึกษา..." required>
+            <button type="submit" style="background: #00d2ff; color: #000;">ค้นหาข้อมูล</button>
+        </form>
+
+        {% if searched %}
+            {% if result %}
+                <div class="result-display">
+                    <h2 style="margin-top: 0; color: #00d2ff;">พบข้อมูลของคุณแล้ว!</h2>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                        <div>
+                            <p><b>ชื่อ:</b> {{ result[0] }}</p>
+                            <p><b>รหัส:</b> {{ result[1] }}</p>
+                            <p><b>คะแนนเก็บ:</b> {{ result[2] }} / 100</p>
+                            <p><b>อัตราเข้าเรียน:</b> {{ result[3] }}%</p>
+                        </div>
+                        <div style="text-align: center; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 15px;">
+                            <p style="margin-bottom: 10px;">สถานะวิเคราะห์โดย AI</p>
+                            {% if result[5] == 'Good' %}
+                                <span class="badge badge-good" style="font-size: 1.2em;">Good</span>
+                                <p style="color: #81c784; margin-top: 10px; font-size: 0.85em;">เยี่ยมมาก! ผลการเรียนวิชา {{ course_id }} อยู่ในเกณฑ์ดี</p>
+                            {% elif result[5] == 'Average' %}
+                                <span class="badge badge-average" style="font-size: 1.2em;">Average</span>
+                                <p style="color: #ffb74d; margin-top: 10px; font-size: 0.85em;">ทำดีแล้ว! พยายามรักษาระดับการเข้าเรียนไว้นะครับ</p>
+                            {% else %}
+                                <span class="badge badge-weak" style="font-size: 1.2em;">Weak</span>
+                                <p style="color: #e57373; margin-top: 10px; font-size: 0.85em;">คำเตือน: คุณมีความเสี่ยงในวิชานี้ ควรปรึกษาอาจารย์</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <p style="color: #ff5252; margin-top: 20px; text-align: center;">❌ ไม่พบรหัสนักศึกษานี้ในรายวิชา {{ course_id }}</p>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <details class="glass-card">
+        <summary style="cursor: pointer; color: #00d2ff; font-weight: 600;">🛠️ จัดการข้อมูล (สำหรับอาจารย์ผู้สอนวิชา {{ course_id }})</summary>
+        <div style="margin-top: 20px;">
+            <h3>📂 อัปโหลดไฟล์ Excel</h3>
+            <form action="/upload/{{ course_id }}" method="post" enctype="multipart/form-data">
+                <div style="border: 2px dashed rgba(255,255,255,0.2); padding: 20px; text-align: center; border-radius: 15px; margin-bottom: 15px;">
+                    <input type="file" name="file" accept=".xlsx" required>
+                </div>
+                <button type="submit" style="width: 100%;">Upload & AI Process</button>
+            </form>
+
+            <hr style="border: 0.5px solid rgba(255,255,255,0.1); margin: 25px 0;">
+
+            <h3>เพิ่มข้อมูลรายบุคคล</h3>
+            <form action="/add/{{ course_id }}" method="post" class="form-grid">
+                <input type="text" name="name" placeholder="ชื่อ-นามสกุล" required>
+                <input type="text" name="id" placeholder="รหัสนักศึกษา" required>
+                <input type="number" name="score" placeholder="คะแนน (0-100)" required>
+                <input type="number" name="attendance" placeholder="เข้าเรียน (%)" required>
+                <input type="number" name="absence" placeholder="ขาดเรียน (ครั้ง)" required>
+                <button type="submit">เพิ่มข้อมูล</button>
+            </form>
+        </div>
+    </details>
+
+    <div class="glass-card">
+        <h3>📊 รายชื่อนักศึกษาในวิชา {{ course_id }}</h3>
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ชื่อ</th>
+                        <th>รหัส</th>
+                        <th>คะแนน</th>
+                        <th>เข้าเรียน</th>
+                        <th>ผล AI</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in students %}
+                    <tr>
+                        <td style="text-align: left;">{{ s[0] }}</td>
+                        <td>{{ s[1] }}</td>
+                        <td>{{ s[2] }}</td>
+                        <td>
+                            <div class="progress-container">
+                                <div class="progress"><div class="progress-bar" style="width: {{ s[3] }}%"></div></div>
+                            </div>
+                            <small>{{ s[3] }}%</small>
+                        </td>
+                        <td>
+                            <span class="badge {% if s[5] == 'Good' %}badge-good{% elif s[5] == 'Average' %}badge-average{% else %}badge-weak{% endif %}">{{ s[5] }}</span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" style="color: #888; padding: 40px;">ยังไม่มีข้อมูลนักศึกษาในวิชานี้</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div style="text-align: right; margin-top:20px;">
+            <a href="/graph/{{ course_id }}"><button style="background: #2e7d32;">📊 อัปเดตกราฟสถิติวิชา {{ course_id }}</button></a>
+        </div>
+    </div>
+
+    {% if students %}
+    <div class="glass-card" style="text-align:center;">
+        <h3>Performance Analysis Dashboard - {{ course_id }}</h3>
+        <img src="{{ url_for('static', filename='chart_' + course_id + '.png') }}" class="graph-img">
+    </div>
+    {% endif %}
+
+</div>
+
+</body>
+</html>
