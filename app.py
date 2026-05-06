@@ -16,7 +16,6 @@ if not os.path.exists('static'):
     os.makedirs('static')
 
 # ---------------- DATA ----------------
-# ใช้ Dictionary เก็บข้อมูลแยกตามรหัสวิชา
 courses_data = {
     "CE331": [],
     "CE332": [],
@@ -41,21 +40,29 @@ def get_group(score, attendance, absence):
 
 # ---------------- ROUTES ----------------
 
-# หน้าแรกสำหรับเลือกวิชา
 @app.route('/')
 def home():
     return render_template("select_course.html", courses=courses_data.keys())
 
-# หน้าหลักของแต่ละรายวิชา
+# --- หน้าหลักรายวิชา (ยุบรวมเหลืออันเดียวแล้ว) ---
 @app.route('/course/<course_id>')
 def course_view(course_id):
     if course_id not in courses_data:
         return redirect(url_for('home'))
     
     students = courses_data[course_id]
+    
+    # คำนวณสถิติส่งไปให้หน้าเว็บ (Stats Card)
+    stats = {
+        'Weak': len([s for s in students if s[5] == 'Weak']),
+        'Average': len([s for s in students if s[5] == 'Average']),
+        'Good': len([s for s in students if s[5] == 'Good'])
+    }
+    
     return render_template("index.html", 
                            course_id=course_id, 
                            students=students, 
+                           stats=stats,
                            searched=False)
 
 # -------- ADD --------
@@ -90,38 +97,57 @@ def upload(course_id):
             
     return redirect(url_for('course_view', course_id=course_id))
 
-# -------- SEARCH (JUMP SEARCH) --------
+# -------- SEARCH & FILTER (แก้ไขระบบ Search ชื่อ + Filter กลุ่ม) --------
 @app.route('/search/<course_id>')
 def search(course_id):
-    sid = request.args.get('id')
+    query = request.args.get('query')
+    filter_group = request.args.get('filter_group')
     students = courses_data.get(course_id, [])
     
+    display_students = students 
     found_student = None
-    if sid and students:
-        # เรียงลำดับก่อนค้นหา
+
+    if query:
+        # ลองค้นด้วย ID (Jump Search)
         arr = sorted(students, key=lambda x: x[1])
         n = len(arr)
-        step = int(math.sqrt(n))
-        prev = 0
-        
-        while prev < n and arr[min(step, n)-1][1] < sid:
-            prev = step
-            step += int(math.sqrt(n))
-            if prev >= n: break
+        if n > 0:
+            step = int(math.sqrt(n))
+            prev = 0
+            while prev < n and arr[min(step, n)-1][1] < query:
+                prev = step
+                step += int(math.sqrt(n))
+                if prev >= n: break
+            while prev < n and arr[prev][1] < query:
+                prev += 1
+                if prev == min(step, n): break
             
-        while prev < n and arr[prev][1] < sid:
-            prev += 1
-            if prev == min(step, n): break
-            
-        if prev < n and arr[prev][1] == sid:
-            found_student = arr[prev]
+            if prev < n and arr[prev][1] == query:
+                found_student = arr[prev]
+                display_students = [found_student]
+            else:
+                # ถ้าหา ID ไม่เจอ ให้ใช้ Linear Search ค้นหาจาก "ชื่อ"
+                display_students = [s for s in students if query.lower() in s[0].lower()]
 
-    # แก้จุดตาย: ต้องส่ง course_id กลับไปด้วยเสมอ
+    if filter_group and filter_group != "All":
+        display_students = [s for s in display_students if s[5] == filter_group]
+
+    # ต้องคำนวณ stats ส่งกลับไปด้วยเพื่อให้หน้าเว็บไม่พัง
+    stats = {
+        'Weak': len([s for s in students if s[5] == 'Weak']),
+        'Average': len([s for s in students if s[5] == 'Average']),
+        'Good': len([s for s in students if s[5] == 'Good'])
+    }
+
     return render_template("index.html", 
                            course_id=course_id, 
-                           students=students, 
-                           result=found_student, 
-                           searched=True)
+                           students=display_students, 
+                           all_students=students, 
+                           stats=stats,
+                           searched=True,
+                           result=found_student,
+                           query=query,
+                           current_filter=filter_group)
 
 # -------- GRAPH --------
 @app.route('/graph/<course_id>')
@@ -133,7 +159,6 @@ def graph(course_id):
         plt.hist(scores, bins=10, color='skyblue', edgecolor='black')
         plt.title(f"Score Distribution - {course_id}")
         plt.tight_layout()
-        # เซฟชื่อไฟล์แยกตามวิชาเพื่อไม่ให้ทับกัน
         plt.savefig(f"static/chart_{course_id}.png")
         plt.close()
 
